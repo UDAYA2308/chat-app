@@ -3,6 +3,7 @@ const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
 const { Socket } = require('dgram')
+const { generateMessage } = require('./utils/messages')
 
 const app = express()
     // Create the HTTP server using the Express app
@@ -17,19 +18,22 @@ app.use(express.static(publicDirectoryPath))
 io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
-    socket.emit('Message', 'Welcome')
-    socket.broadcast.emit('Message', "New User has joined")
+    socket.emit('Message', generateMessage('Welcome'))
+    socket.broadcast.emit('Message', generateMessage("New User has joined"))
 
     socket.on("SendMessage", (message, callback) => {
-        io.emit("Message", message)
+        io.emit("Message", generateMessage(message))
         callback()
     })
 
     socket.on("ShareLocation", (cords, callback) => {
-        io.emit("Message", `https://google.com/maps?q=${cords.latitude},${cords.longitude}`)
+        io.emit("LocationMessage", generateMessage(`https://google.com/maps?q=${cords.latitude},${cords.longitude}`))
         callback()
     })
 
+    socket.on('disconnect', () => {
+        io.emit("Message", generateMessage('User has left'))
+    })
 })
 server.listen(port, () => {
     console.log(`Server is up on port ${port}!`)
