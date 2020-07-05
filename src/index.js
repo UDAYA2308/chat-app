@@ -18,9 +18,14 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
     socket.emit('Message', 'Welcome')
+    socket.broadcast.emit('Message', "New User has joined")
 
     socket.on("SendMessage", (message) => {
         io.emit("Message", message)
+    })
+
+    socket.on("ShareLocation", (cords) => {
+        io.emit("Message", `https://google.com/maps?q=${cords.latitude},${cords.longitude}`)
     })
 
 })

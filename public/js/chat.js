@@ -6,8 +6,19 @@ socket.on('Message', (message) => {
 
 document.querySelector('#message-form').addEventListener('submit', (e) => {
     e.preventDefault()
-    const message = document.querySelector('#message').value
+    const message = document.querySelector('#message')
+    socket.emit('SendMessage', message.value)
+    message.value = ''
+})
 
-    socket.emit('SendMessage', message)
+document.querySelector('#send-location').addEventListener('click', () => {
+    if (!navigator.geolocation)
+        return alert('Geolocation is not supported for your browser')
 
+    navigator.geolocation.getCurrentPosition((position) => {
+        socket.emit('ShareLocation', {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+        })
+    })
 })
