@@ -4,6 +4,7 @@ const express = require('express')
 const socketio = require('socket.io')
 const { Socket } = require('dgram')
 const { generateMessage } = require('./utils/messages')
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/user')
 
 const app = express()
     // Create the HTTP server using the Express app
@@ -16,27 +17,40 @@ app.use(express.static(publicDirectoryPath))
     // Listen for new connections to Socket.io
 
 io.on('connection', (socket) => {
-    console.log('New WebSocket connection')
 
     socket.on("SendMessage", (message, callback) => {
-        io.to('kumar').emit("Message", generateMessage(message))
+        const user = getUser(socket.id)
+        io.to(user.room).emit("Message", generateMessage(user.username, message))
         callback()
     })
 
-    socket.on('join', ({ username, room }) => {
-        socket.join(room)
-        socket.emit('Message', generateMessage('Welcome'))
-        socket.broadcast.to(room).emit('Message', generateMessage(`${username} has joined`))
+    socket.on('join', ({ username, room }, callback) => {
+
+        const { error, user } = addUser({ id: socket.id, username, room })
+
+        if (error) {
+            return callback(error)
+        }
+
+        socket.join(user.room)
+        socket.emit('Message', generateMessage(user.username, 'Welcome!'))
+        socket.broadcast.to(user.room).emit('Message', generateMessage(`${user.username} has joined`))
+
+        callback()
 
     })
 
     socket.on("ShareLocation", (cords, callback) => {
-        io.emit("LocationMessage", generateMessage(`https://google.com/maps?q=${cords.latitude},${cords.longitude}`))
+        const user = getUser(socket.id)
+        io.to(user.room).emit("LocationMessage", generateMessage(user.username, `https://google.com/maps?q=${cords.latitude},${cords.longitude}`))
         callback()
     })
 
     socket.on('disconnect', () => {
-        io.emit("Message", generateMessage('User has left'))
+        const user = removeUser(socket.id)
+        if (user) {
+            io.to(user.room).emit("Message", generateMessage(`${user.username} has left`))
+        }
     })
 })
 server.listen(port, () => {
