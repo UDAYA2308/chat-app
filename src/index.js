@@ -20,12 +20,14 @@ io.on('connection', (socket) => {
     socket.emit('Message', 'Welcome')
     socket.broadcast.emit('Message', "New User has joined")
 
-    socket.on("SendMessage", (message) => {
+    socket.on("SendMessage", (message, callback) => {
         io.emit("Message", message)
+        callback()
     })
 
-    socket.on("ShareLocation", (cords) => {
+    socket.on("ShareLocation", (cords, callback) => {
         io.emit("Message", `https://google.com/maps?q=${cords.latitude},${cords.longitude}`)
+        callback()
     })
 
 })
